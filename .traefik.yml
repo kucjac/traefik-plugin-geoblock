@@ -1,4 +1,4 @@
-displayName: geoblock
+displayName: GeoBlock IP2Location
 type: middleware
 import: github.com/kucjac/traefik-plugin-geoblock
 summary: traefik plugin to whitelist or blacklist requests based on geolocation
