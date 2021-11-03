@@ -47,8 +47,8 @@ func TestNew(t *testing.T) {
 
 	t.Run("NoDatabaseFilePath", func(t *testing.T) {
 		plugin, err := New(context.TODO(), &noopHandler{}, &Config{Enabled: true}, pluginName)
-		require.Error(t, err)
-		require.Nil(t, plugin)
+		require.NoError(t, err)
+		require.NotNil(t, plugin)
 	})
 }
 
@@ -93,6 +93,40 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 		plugin.ServeHTTP(rr, req)
 
 		require.Equal(t, http.StatusForbidden, rr.Code)
+	})
+
+	t.Run("DisallowedCountries", func(t *testing.T) {
+		t.Run("Pass", func(t *testing.T) {
+			cfg := &Config{Enabled: true, DisallowedCountries: []string{"PL"}}
+			plugin, err := New(context.TODO(), &noopHandler{}, cfg, pluginName)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
+
+			const randomCzechIP = "188.92.102.22"
+			req.Header.Set("X-Real-IP", randomCzechIP)
+
+			rr := httptest.NewRecorder()
+			plugin.ServeHTTP(rr, req)
+
+			require.Equal(t, http.StatusTeapot, rr.Code)
+		})
+
+		t.Run("Forbid", func(t *testing.T) {
+			cfg := &Config{Enabled: true, DisallowedCountries: []string{"PL"}}
+			plugin, err := New(context.TODO(), &noopHandler{}, cfg, pluginName)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
+			// Define some random polish IP address.
+			const ranomPolandIP = "195.136.153.130"
+			req.Header.Set("X-Real-IP", ranomPolandIP)
+
+			rr := httptest.NewRecorder()
+			plugin.ServeHTTP(rr, req)
+
+			require.Equal(t, http.StatusForbidden, rr.Code)
+		})
 	})
 
 	t.Run("DisallowedPrivate", func(t *testing.T) {

@@ -1,6 +1,7 @@
 package traefik_plugin_geoblock
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"errors"
@@ -12,32 +13,53 @@ import (
 	"github.com/ip2location/ip2location-go/v9"
 )
 
-type Config struct {
-	Enabled          bool
-	DatabaseFilePath string
-	AllowedCountries []string
-	AllowPrivate     bool
+//go:embed IP2LOCATION-LITE-DB1.IPV6.BIN
+var embedDBLite []byte
+
+type readCloser struct {
+	*bytes.Reader
 }
 
+func (r readCloser) Close() error {
+	return nil
+}
+
+// Config defines plugin configuration.
+type Config struct {
+	DatabaseFilePath    string
+	AllowedCountries    []string
+	DisallowedCountries []string
+	Enabled             bool
+	AllowPrivate        bool
+}
+
+// CreateConfig creates a new config.
 func CreateConfig() *Config {
 	return &Config{}
 }
 
+// Plugin is the traefik ip2location plugin implementation.
 type Plugin struct {
-	next             http.Handler
-	name             string
-	db               *ip2location.DB
-	enabled          bool
-	allowedCountries []string
-	allowPrivate     bool
+	next                http.Handler
+	name                string
+	db                  *ip2location.DB
+	enabled             bool
+	allowedCountries    []string
+	allowPrivate        bool
+	disallowedCountries []string
 }
 
+// New creates a new plugin handler.
 func New(_ context.Context, next http.Handler, cfg *Config, name string) (http.Handler, error) {
 	if next == nil {
 		return nil, fmt.Errorf("no next handler provided")
 	}
 	if cfg == nil {
 		return nil, fmt.Errorf("no config provided")
+	}
+
+	if len(cfg.DisallowedCountries) > 0 && len(cfg.AllowedCountries) > 0 {
+		return nil, errors.New("either allowed countries or disallowed countries could be set at once")
 	}
 
 	if !cfg.Enabled {
@@ -50,25 +72,35 @@ func New(_ context.Context, next http.Handler, cfg *Config, name string) (http.H
 		}, nil
 	}
 
+	var (
+		db  *ip2location.DB
+		err error
+	)
 	if cfg.DatabaseFilePath == "" {
-		return nil, fmt.Errorf("no databaseFilePath configured")
-	}
-
-	db, err := ip2location.OpenDB(cfg.DatabaseFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		log.Println("No database file path defined. Setting IP2LOCATION-LITE-DB1.IPV6.BIN")
+		db, err = ip2location.OpenDBWithReader(readCloser{Reader: bytes.NewReader(embedDBLite)})
+		if err != nil {
+			return nil, fmt.Errorf("reading default database failed: %w", err)
+		}
+	} else {
+		db, err = ip2location.OpenDB(cfg.DatabaseFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open database: %w", err)
+		}
 	}
 
 	return &Plugin{
-		next:             next,
-		name:             name,
-		db:               db,
-		enabled:          cfg.Enabled,
-		allowedCountries: cfg.AllowedCountries,
-		allowPrivate:     cfg.AllowPrivate,
+		next:                next,
+		name:                name,
+		db:                  db,
+		enabled:             cfg.Enabled,
+		allowedCountries:    cfg.AllowedCountries,
+		disallowedCountries: cfg.DisallowedCountries,
+		allowPrivate:        cfg.AllowPrivate,
 	}, nil
 }
 
+// ServeHTTP implements http.Handler interface.
 func (p *Plugin) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if !p.enabled {
 		p.next.ServeHTTP(rw, req)
@@ -141,15 +173,30 @@ func (p *Plugin) CheckAllowed(ip string) (string, error) {
 		return country, ErrNotAllowed
 	}
 
-	var allowed bool
-	for _, allowedCountry := range p.allowedCountries {
-		if allowedCountry == country {
-			allowed = true
-			break
+	if len(p.allowedCountries) > 0 {
+		var allowed bool
+		for _, allowedCountry := range p.allowedCountries {
+			if allowedCountry == country {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return country, ErrNotAllowed
 		}
 	}
-	if !allowed {
-		return country, ErrNotAllowed
+
+	if len(p.disallowedCountries) > 0 {
+		allowed := true
+		for _, disallowed := range p.disallowedCountries {
+			if disallowed == country {
+				allowed = false
+				break
+			}
+		}
+		if !allowed {
+			return country, ErrNotAllowed
+		}
 	}
 
 	return country, nil

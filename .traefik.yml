@@ -1,7 +1,7 @@
 displayName: geoblock
 type: middleware
-import: github.com/nscuro/traefik-plugin-geoblock
-summary: traefik plugin to whitelist requests based on geolocation
+import: github.com/kucjac/traefik-plugin-geoblock
+summary: traefik plugin to whitelist or blacklist requests based on geolocation
 testData:
   # It doesn't appear to be possible to get the pilot plugin analyzer
   # to load local files. To prevent errors, the plugin is disabled here.
@@ -9,4 +9,5 @@ testData:
   enabled: false
   # databaseFilePath: IP2LOCATION-LITE-DB1.IPV6.BIN
   # allowedCountries: [ "CH", "DE" ]
+  # disallowedCountries: [ "CH", "DE" ]
   # allowPrivate: true

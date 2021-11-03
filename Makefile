@@ -1,3 +1,7 @@
 test:
 	go test -v -cover ./...
-.PHONY: test
+
+golangci-lint:
+	golangci-lint run ./...
+
+.PHONY: test golangci-lint
