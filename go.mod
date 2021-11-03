@@ -1,4 +1,4 @@
-module github.com/nscuro/traefik-plugin-geoblock
+module github.com/kucjac/traefik-plugin-geoblock
 
 go 1.17
 
