@@ -13,9 +13,6 @@ import (
 	"github.com/ip2location/ip2location-go/v9"
 )
 
-//go:embed IP2LOCATION-LITE-DB1.IPV6.BIN
-var embedDBLite []byte
-
 type readCloser struct {
 	*bytes.Reader
 }
@@ -78,7 +75,11 @@ func New(_ context.Context, next http.Handler, cfg *Config, name string) (http.H
 	)
 	if cfg.DatabaseFilePath == "" {
 		log.Println("No database file path defined. Setting IP2LOCATION-LITE-DB1.IPV6.BIN")
-		db, err = ip2location.OpenDBWithReader(readCloser{Reader: bytes.NewReader(embedDBLite)})
+		ip2LocationDBBytes, err := ip2locationLiteDb1Ipv6BinBytes()
+		if err != nil {
+			return nil, fmt.Errorf("reading default IP2LOCATION-LITE-DB1.IPV6.BIN bytes failed")
+		}
+		db, err = ip2location.OpenDBWithReader(readCloser{Reader: bytes.NewReader(ip2LocationDBBytes)})
 		if err != nil {
 			return nil, fmt.Errorf("reading default database failed: %w", err)
 		}
