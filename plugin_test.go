@@ -1,20 +1,19 @@
 package traefik_plugin_geoblock_test
 
 import (
-	"net/http"
 	"testing"
 )
 
-const (
-	pluginName = "geoblock"
-	dbFilePath = "./IP2LOCATION-LITE-DB1.IPV6.BIN"
-)
-
-type noopHandler struct{}
-
-func (n noopHandler) ServeHTTP(rw http.ResponseWriter, _ *http.Request) {
-	rw.WriteHeader(http.StatusTeapot)
-}
+// const (
+// 	pluginName = "geoblock"
+// 	dbFilePath = "./IP2LOCATION-LITE-DB1.IPV6.BIN"
+// )
+//
+// type noopHandler struct{}
+//
+// func (n noopHandler) ServeHTTP(rw http.ResponseWriter, _ *http.Request) {
+// 	rw.WriteHeader(http.StatusTeapot)
+// }
 
 func TestNew(t *testing.T) {
 	// 	t.Run("Disabled", func(t *testing.T) {
