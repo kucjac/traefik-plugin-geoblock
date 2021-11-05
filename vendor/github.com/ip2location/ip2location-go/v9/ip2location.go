@@ -1,4 +1,4 @@
-// This ip2location package provides a fast lookup of country, region, city, latitude, longitude, ZIP code, time zone,
+// Package ip2location provides a fast lookup of country, region, city, latitude, longitude, ZIP code, time zone,
 // ISP, domain name, connection type, IDD code, area code, weather station code, station name, MCC, MNC,
 // mobile brand, elevation, usage type, address type and IAB category from IP address by using IP2Location database.
 package ip2location
@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"math/big"
 	"net"
@@ -17,8 +16,9 @@ import (
 )
 
 type DBReader interface {
-	io.ReadCloser
-	io.ReaderAt
+	Read(p []byte) (n int, err error)
+	Close() error
+	ReadAt(p []byte, off int64) (n int, err error)
 }
 
 type ip2locationmeta struct {
@@ -327,7 +327,7 @@ func fatal(db *DB, err error) (*DB, error) {
 	return nil, err
 }
 
-// Open takes the path to the IP2Location BIN database file. It will read all the metadata required to
+// OpenDB takes the path to the IP2Location BIN database file. It will read all the metadata required to
 // be able to extract the embedded geolocation data, and return the underlining DB object.
 func OpenDB(dbpath string) (*DB, error) {
 	f, err := os.Open(dbpath)
