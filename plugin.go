@@ -3,7 +3,6 @@ package traefik_plugin_geoblock
 import (
 	"bytes"
 	"context"
-	_ "embed"
 	"errors"
 	"fmt"
 	"log"
