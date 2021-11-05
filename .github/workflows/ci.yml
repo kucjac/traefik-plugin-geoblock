@@ -43,9 +43,13 @@ jobs:
           go-version: "1.17"
       - name: Checkout Repository
         uses: actions/checkout@v2
+      - name: Copy vendor to GOPATH
+        run: |
+          cp -r /home/runner/work/traefik-plugin-geoblock/traefik-plugin-geoblock/vendor $GOPATH/src/
       - name: Get Yeagi binary
         run: |
           go get -u github.com/traefik/yaegi/cmd/yaegi
+
       - name: Test plugin with Yeagi
         run: |
           yaegi test
