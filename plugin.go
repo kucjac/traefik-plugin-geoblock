@@ -1,7 +1,6 @@
 package traefik_plugin_geoblock
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,14 +10,6 @@ import (
 
 	"github.com/ip2location/ip2location-go/v9"
 )
-
-type readCloser struct {
-	*bytes.Reader
-}
-
-func (r readCloser) Close() error {
-	return nil
-}
 
 // Config defines plugin configuration.
 type Config struct {
@@ -73,15 +64,7 @@ func New(_ context.Context, next http.Handler, cfg *Config, name string) (http.H
 		err error
 	)
 	if cfg.DatabaseFilePath == "" {
-		log.Println("No database file path defined. Setting IP2LOCATION-LITE-DB1.IPV6.BIN")
-		ip2LocationDBBytes, err := ip2locationLiteDb1Ipv6BinBytes()
-		if err != nil {
-			return nil, fmt.Errorf("reading default IP2LOCATION-LITE-DB1.IPV6.BIN bytes failed")
-		}
-		db, err = ip2location.OpenDBWithReader(readCloser{Reader: bytes.NewReader(ip2LocationDBBytes)})
-		if err != nil {
-			return nil, fmt.Errorf("reading default database failed: %w", err)
-		}
+		return nil, errors.New("no database file path defined")
 	} else {
 		db, err = ip2location.OpenDB(cfg.DatabaseFilePath)
 		if err != nil {

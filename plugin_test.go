@@ -59,11 +59,11 @@ func TestNew(t *testing.T) {
 
 	t.Run("NoDatabaseFilePath", func(t *testing.T) {
 		plugin, err := geoblock.New(context.TODO(), &noopHandler{}, &geoblock.Config{Enabled: true}, pluginName)
-		if err != nil {
+		if err == nil {
 			t.Fatal(err)
 		}
-		if plugin == nil {
-			t.Error("plugin is expected to be not nil")
+		if plugin != nil {
+			t.Error("plugin is expected to be nil")
 		}
 	})
 }
@@ -125,7 +125,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 
 	t.Run("DisallowedCountries", func(t *testing.T) {
 		t.Run("Pass", func(t *testing.T) {
-			cfg := &geoblock.Config{Enabled: true, DisallowedCountries: []string{"PL"}}
+			cfg := &geoblock.Config{Enabled: true, DatabaseFilePath: dbFilePath, DisallowedCountries: []string{"PL"}}
 			plugin, err := geoblock.New(context.TODO(), &noopHandler{}, cfg, pluginName)
 			if err != nil {
 				t.Fatal(err)
@@ -145,7 +145,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 		})
 
 		t.Run("Forbid", func(t *testing.T) {
-			cfg := &geoblock.Config{Enabled: true, DisallowedCountries: []string{"PL"}}
+			cfg := &geoblock.Config{Enabled: true, DatabaseFilePath: dbFilePath, DisallowedCountries: []string{"PL"}}
 			plugin, err := geoblock.New(context.TODO(), &noopHandler{}, cfg, pluginName)
 			if err != nil {
 				t.Fatal(err)
